@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge PDFs and Download</title>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+    <h1>Merge PDF Files</h1>
+    <input type="file" id="pdfInput" multiple accept="application/pdf">
+    <button id="mergeBtn">Merge PDFs</button>
+    <button id="downloadMergedBtn" style="display:;">Download Merged File</button>
+
+    <script>
+        let mergedPdfBytes = null; // To store the merged PDF for later download
+
+        document.getElementById('mergeBtn').addEventListener('click', async () => {
+            const files = document.getElementById('pdfInput').files;
+
+            if (!files.length) {
+                alert('Please select at least one PDF file.');
+                return;
+            }
+
+            const mergedPdf = await PDFLib.PDFDocument.create();
+
+            for (const file of files) {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                copiedPages.forEach(page => mergedPdf.addPage(page));
+            }
+
+            mergedPdfBytes = await mergedPdf.save(); // Save merged PDF bytes
+            document.getElementById('downloadMergedBtn').style.display = 'block'; // Show download button
+            alert('PDFs merged successfully! Click "Download Merged File" to download.');
+        });
+
+        document.getElementById('downloadMergedBtn').addEventListener('click', () => {
+            if (!mergedPdfBytes) {
+                alert('No merged file available. Please merge PDFs first.');
+                return;
+            }
+
+            const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'merged.pdf';
+            link.click();
+        });
+    </script>
+</body>
+</html>
